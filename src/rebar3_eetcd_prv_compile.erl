@@ -2,8 +2,6 @@
 
 -export([init/1, do/1, format_error/1]).
 
--include_lib("providers/include/providers.hrl").
-
 -define(PROVIDER, gen).
 -define(NAMESPACE, etcd).
 -define(DEPS, [{default, app_discovery}]).
@@ -36,8 +34,13 @@ do(State) ->
     GpbOpts = proplists:get_value(gpb_opts, EtcdConfig, []),
     
     [begin
-         GpbModule = compile_pb(Filename, GpbOpts),
-         gen_client_module(GpbModule, Options, EtcdConfig, State)
+         GpbModule = preload_pb(Filename, GpbOpts),
+         try
+             gen_client_module(GpbModule, Options, EtcdConfig, State)
+         catch E:R ->
+             rebar_utils:abort("Failed to generate client ~p ~p: ~p ~nPlease run rebar3 protobuf compile first!~n",
+                 [GpbModule, E, R])
+         end
      end || Filename <- filelib:wildcard(filename:join(ProtoDir, "*.proto"))],
     {ok, State}.
 
@@ -45,17 +48,12 @@ do(State) ->
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
-compile_pb(Filename, Options) ->
+preload_pb(Filename, Options) ->
     OutDir = proplists:get_value(o, Options, "src/protos"),
     ModuleNameSuffix = proplists:get_value(module_name_suffix, Options, "_pb"),
     ModuleNamePrefix = proplists:get_value(module_name_prefix, Options, ""),
     CompiledPB = filename:join(OutDir, ModuleNamePrefix ++ filename:basename(Filename, ".proto") ++ ModuleNameSuffix ++ ".erl"),
     rebar_log:log(info, "Loading ~s", [CompiledPB]),
-    %ok = gpb_compile:file(Filename, [
-    %    {rename, {msg_name, snake_case}},
-    %    {rename, {msg_fqname, base_name}},
-    %    use_packages, maps,
-    %    strings_as_binaries, {i, "."}, {o, OutDir} | Options]),
     GpbIncludeDir = filename:join(code:lib_dir(gpb), "include"),
     case compile:file(CompiledPB,
         [binary, {i, GpbIncludeDir}, {i, "./include/"}, return_errors]) of
@@ -70,7 +68,8 @@ compile_pb(Filename, Options) ->
             {module, _} = code:load_binary(Module, CompiledPB, Compiled),
             Module;
         {error, Errors, Warnings} ->
-            throw(?PRV_ERROR({compile_errors, Errors, Warnings}))
+            rebar_utils:abort("Failed to loading ~p ~p: ~p ~nPlease run rebar3 protobuf compile first!~n",
+                [CompiledPB, Errors, Warnings])
     end.
 
 gen_client_module(GpbModule, Options, EtcdConfig, State) ->
