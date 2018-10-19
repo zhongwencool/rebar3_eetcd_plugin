@@ -19,7 +19,7 @@ init(State) ->
         {module, ?MODULE},            % The module implementation of the task
         {bare, true},                 % The task can be run by the user, always true
         {deps, ?DEPS},                % The list of dependencies
-        {example, "rebar3 eetcd gen"}, % How to use the plugin
+        {example, "rebar3 etcd gen"}, % How to use the plugin
         {opts, []},                   % list of options understood by the plugin
         {short_desc, "Generates ETCD client protos"},
         {desc, "Generates ETCD V3 client protos"}
@@ -50,7 +50,7 @@ compile_pb(Filename, Options) ->
     ModuleNameSuffix = proplists:get_value(module_name_suffix, Options, "_pb"),
     ModuleNamePrefix = proplists:get_value(module_name_prefix, Options, ""),
     CompiledPB = filename:join(OutDir, ModuleNamePrefix ++ filename:basename(Filename, ".proto") ++ ModuleNameSuffix ++ ".erl"),
-    rebar_log:log(info, "Writing ~s", [CompiledPB]),
+    rebar_log:log(info, "Loading ~s", [CompiledPB]),
     %ok = gpb_compile:file(Filename, [
     %    {rename, {msg_name, snake_case}},
     %    {rename, {msg_fqname, base_name}},
