@@ -4,4 +4,4 @@
   {pb_module, "", "Name of protobuf module to get type specs from"},
   {service_name, [], "Name of service"},
   {methods, [], "List of methods for service"}]}.
-{template, "eetcd_sample_client.erl", "{{out_dir}}/clients/eetcd_{{module_name}}.erl"}.
+{template, "eetcd_sample_client.erl", "{{out_dir}}/clients/eetcd_{{module_name}}_gen.erl"}.

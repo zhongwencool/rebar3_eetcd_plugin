@@ -7,8 +7,7 @@ Build
 -----
 
 ```
-$ rebar3 protobuf compile
-$ rebar3 etcd gen
+$ rebar3 compile
 ```
 
 Use
