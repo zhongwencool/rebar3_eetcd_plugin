@@ -5,7 +5,6 @@
               {applications,[kernel,stdlib,gpb,providers]},
               {env,[]},
               {modules,[]},
-              {maintainers,["zhongwencool"]},
               {licenses,["Apache 2.0"]},
               {links,[{"Github",
                        "https://github.com/zhongwencool/rebar3_eetcd_plugin"}]}]}.
