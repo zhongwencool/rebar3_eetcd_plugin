@@ -19,7 +19,7 @@ init(State) ->
         {module, ?MODULE},            % The module implementation of the task
         {bare, true},                 % The task can be run by the user, always true
         {deps, ?DEPS},                % The list of dependencies
-        {example, "rebar3 eetcd gen"}, % How to use the plugin
+        {example, "rebar3 etcd gen"}, % How to use the plugin
         {opts, []},                   % list of options understood by the plugin
         {short_desc, "Generates ETCD client protos"},
         {desc, "Generates ETCD V3 client protos"}
@@ -34,10 +34,12 @@ do(State) ->
     {Options, _} = rebar_state:command_parsed_args(State),
     ProtoDir = proplists:get_value(protos, Options, proplists:get_value(protos, EtcdConfig, "priv/protos")),
     GpbOpts = proplists:get_value(gpb_opts, EtcdConfig, []),
-    
+
     [begin
          GpbModule = compile_pb(Filename, GpbOpts),
-         gen_client_module(GpbModule, Options, EtcdConfig, State)
+         rebar_api:info("Compiled PB file ~s~n", [Filename]),
+         gen_client_module(GpbModule, Options, EtcdConfig, State),
+         rebar_api:info("Generated a client module for PB module ~s~n", [GpbModule])
      end || Filename <- filelib:wildcard(filename:join(ProtoDir, "*.proto"))],
     {ok, State}.
 
@@ -50,12 +52,7 @@ compile_pb(Filename, Options) ->
     ModuleNameSuffix = proplists:get_value(module_name_suffix, Options, "_pb"),
     ModuleNamePrefix = proplists:get_value(module_name_prefix, Options, ""),
     CompiledPB = filename:join(OutDir, ModuleNamePrefix ++ filename:basename(Filename, ".proto") ++ ModuleNameSuffix ++ ".erl"),
-    rebar_log:log(info, "Writing ~s", [CompiledPB]),
-    %ok = gpb_compile:file(Filename, [
-    %    {rename, {msg_name, snake_case}},
-    %    {rename, {msg_fqname, base_name}},
-    %    use_packages, maps,
-    %    strings_as_binaries, {i, "."}, {o, OutDir} | Options]),
+    rebar_api:info("Writing ~s", [CompiledPB]),
     GpbIncludeDir = filename:join(code:lib_dir(gpb), "include"),
     case compile:file(CompiledPB,
         [binary, {i, GpbIncludeDir}, {i, "./include/"}, return_errors]) of
@@ -76,11 +73,12 @@ compile_pb(Filename, Options) ->
 gen_client_module(GpbModule, Options, EtcdConfig, State) ->
     OutDir = proplists:get_value(out_dir, EtcdConfig, "src"),
     Force = proplists:get_value(force, Options, true),
+    rebar_api:debug("GPB module service names: ~p", [GpbModule:get_service_names()]),
     Services = [begin
                     {{_, NameAtom}, Methods} = GpbModule:get_service_def(S),
                     Name = atom_to_list(NameAtom),
                     [_, Module] = string:tokens(Name, "."),
-                    rebar_log:log(debug, "GpbModule: ~p~n", [{GpbModule, Name, Methods}]),
+                    rebar_api:debug("GPB module: ~p~n", [{GpbModule, Name, Methods}]),
                     [
                         {out_dir, OutDir},
                         {pb_module, atom_to_list(GpbModule)},
@@ -90,16 +88,17 @@ gen_client_module(GpbModule, Options, EtcdConfig, State) ->
                             [begin
                                  %% {rpc, MethodName, Input,  Output, InputStream, OutputStream, _Opts} = Method,
                                  #{input := Input,
-                                     input_stream := InputStream,
-                                     name := MethodName,
-                                     opts := _Opts,
-                                     output := Output,
-                                     output_stream := OutputStream} = Method,
+                                   input_stream := InputStream,
+                                   name := MethodName,
+                                   opts := _Opts,
+                                   output := Output,
+                                   output_stream := OutputStream} = Method,
                                  MethodNameStr = atom_to_list(MethodName),
                                  [
                                      {method, list_snake_case(MethodNameStr)},
                                      {unmodified_service_name, Module},
                                      {unmodified_method, MethodNameStr},
+                                     {full_service_path, full_service_path(Name, MethodNameStr)},
                                      {pb_module, atom_to_list(GpbModule)},
                                      {input, Input},
                                      {output, Output},
@@ -108,7 +107,7 @@ gen_client_module(GpbModule, Options, EtcdConfig, State) ->
                                  ]
                              end|| Method <- Methods]}]
                 end || S <- GpbModule:get_service_names()],
-    rebar_log:log(debug, "services: ~p", [Services]),
+    rebar_api:debug("Services to run module generation for: ~p", [Services]),
     [rebar_templater:new("eetcd_client", Service, Force, State) || Service <- Services].
 
 list_snake_case(NameString) ->
@@ -124,3 +123,9 @@ list_snake_case(NameString) ->
     Snaked1 = string:replace(Snaked, ".", "_", all),
     Snaked2 = string:replace(Snaked1, "__", "_", all),
     string:to_lower(unicode:characters_to_list(Snaked2)).
+
+%% Calculates correct gRPC service path
+full_service_path(Service, Method) when Service =:= "Etcd.Lock"; Service =:= "Lock" ->
+    io_lib:format("/v3lockpb.Lock/~p", [Method]);
+full_service_path(Service, Method) ->
+    io_lib:format("/etcdserverpb.~s/~s", [Service, Method]).

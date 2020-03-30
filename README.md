@@ -7,7 +7,7 @@ Build
 -----
 
 ```
-$ rebar3 compile
+rebar3 compile
 ```
 
 Use
@@ -15,9 +15,14 @@ Use
 
 Add the plugin to your rebar config:
 
-```
+``` erlang
 {deps, [eetcd]}.
 
 {plugins, [rebar3_gbp_plugin, rebar3_eetcd_plugin]}.
 ```
 
+and then run generation:
+
+```shell
+rebar3 etcd gen
+```
