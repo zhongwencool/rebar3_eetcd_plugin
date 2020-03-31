@@ -105,7 +105,7 @@ format_methods(Module, Name, GpbModule, Methods) ->
              {method,                  list_snake_case(MethodNameStr)},
              {unmodified_service_name, Module},
              {unmodified_method,       MethodNameStr},
-             {full_service_path,       full_service_path(Name, MethodNameStr)},
+             {full_service_path,       full_service_path(Module, MethodNameStr)},
              {pb_module,               atom_to_list(GpbModule)},
              {input,                   Input},
              {output,                  Output},
@@ -129,7 +129,7 @@ list_snake_case(NameString) ->
     string:to_lower(unicode:characters_to_list(Snaked2)).
 
 %% Calculates correct gRPC service path
-full_service_path(Service, Method) when Service =:= "Etcd.Lock"; Service =:= "Lock" ->
+full_service_path(Service, Method) when Service =:= "Lock" ->
     io_lib:format("/v3lockpb.Lock/~s", [Method]);
 full_service_path(Service, Method) ->
     io_lib:format("/etcdserverpb.~s/~s", [Service, Method]).
