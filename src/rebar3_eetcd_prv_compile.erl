@@ -73,42 +73,46 @@ compile_pb(Filename, Options) ->
 gen_client_module(GpbModule, Options, EtcdConfig, State) ->
     OutDir = proplists:get_value(out_dir, EtcdConfig, "src"),
     Force = proplists:get_value(force, Options, true),
-    rebar_api:debug("GPB module service names: ~p", [GpbModule:get_service_names()]),
-    Services = [begin
-                    {{_, NameAtom}, Methods} = GpbModule:get_service_def(S),
-                    Name = atom_to_list(NameAtom),
-                    [_, Module] = string:tokens(Name, "."),
-                    rebar_api:debug("GPB module: ~p~n", [{GpbModule, Name, Methods}]),
-                    [
-                        {out_dir, OutDir},
-                        {pb_module, atom_to_list(GpbModule)},
-                        {unmodified_service_name, Name},
-                        {module_name, list_snake_case(Module)},
-                        {methods,
-                            [begin
-                                 %% {rpc, MethodName, Input,  Output, InputStream, OutputStream, _Opts} = Method,
-                                 #{input := Input,
-                                   input_stream := InputStream,
-                                   name := MethodName,
-                                   opts := _Opts,
-                                   output := Output,
-                                   output_stream := OutputStream} = Method,
-                                 MethodNameStr = atom_to_list(MethodName),
-                                 [
-                                     {method, list_snake_case(MethodNameStr)},
-                                     {unmodified_service_name, Module},
-                                     {unmodified_method, MethodNameStr},
-                                     {full_service_path, full_service_path(Name, MethodNameStr)},
-                                     {pb_module, atom_to_list(GpbModule)},
-                                     {input, Input},
-                                     {output, Output},
-                                     {input_stream, InputStream},
-                                     {out_stream, OutputStream}
-                                 ]
-                             end|| Method <- Methods]}]
-                end || S <- GpbModule:get_service_names()],
-    rebar_api:debug("Services to run module generation for: ~p", [Services]),
+    Services = [format_services(GpbModule, Service, OutDir) || Service <- GpbModule:get_service_names()],
+    rebar_api:debug("eetcd will run client module gen for these services: ~p", [Services]),
     [rebar_templater:new("eetcd_client", Service, Force, State) || Service <- Services].
+
+format_services(GpbModule, Service, OutDir) ->
+    begin
+        {{_, NameAtom}, Methods} = GpbModule:get_service_def(Service),
+        rebar_api:debug("eetcd service ~p has methods: ~p", [Service, Methods]),
+        Name = atom_to_list(NameAtom),
+        [_, Module] = string:tokens(Name, "."),
+
+        [
+            {out_dir,                 OutDir},
+            {pb_module,               atom_to_list(GpbModule)},
+            {unmodified_service_name, Name},
+            {module_name,             list_snake_case(Module)},
+            {methods,                 format_methods(Module, Name, GpbModule, Methods)}
+        ]
+    end.
+
+format_methods(Module, Name, GpbModule, Methods) ->
+    [begin
+        #{input         := Input,
+          input_stream  := InputStream,
+          name          := MethodName,
+          output        := Output,
+          output_stream := OutputStream} = Method,
+         MethodNameStr = atom_to_list(MethodName),
+         [
+             {method,                  list_snake_case(MethodNameStr)},
+             {unmodified_service_name, Module},
+             {unmodified_method,       MethodNameStr},
+             {full_service_path,       full_service_path(Name, MethodNameStr)},
+             {pb_module,               atom_to_list(GpbModule)},
+             {input,                   Input},
+             {output,                  Output},
+             {input_stream,            InputStream},
+             {out_stream,              OutputStream}
+         ]
+     end || Method <- Methods].
 
 list_snake_case(NameString) ->
     Snaked = lists:foldl(fun(RE, Snaking) ->
@@ -126,6 +130,6 @@ list_snake_case(NameString) ->
 
 %% Calculates correct gRPC service path
 full_service_path(Service, Method) when Service =:= "Etcd.Lock"; Service =:= "Lock" ->
-    io_lib:format("/v3lockpb.Lock/~p", [Method]);
+    io_lib:format("/v3lockpb.Lock/~s", [Method]);
 full_service_path(Service, Method) ->
     io_lib:format("/etcdserverpb.~s/~s", [Service, Method]).

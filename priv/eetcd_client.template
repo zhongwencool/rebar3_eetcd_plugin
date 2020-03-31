@@ -1,7 +1,6 @@
 {description, "ETCD v3 client template"}.
 {variables,
  [{unmodified_service_name, "", "Original name of the service, as it'll appear in a request"},
-  {full_service_path, "", "gRPC service path"},
   {pb_module, "", "Name of protobuf module to get type specs from"},
   {service_name, [], "Name of the service"},
   {methods, [], "List of methods for service"}]}.
