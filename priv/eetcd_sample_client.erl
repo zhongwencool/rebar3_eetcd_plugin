@@ -16,7 +16,7 @@
 {{#methods}}
 %% @doc {{^output_stream}}{{^input_stream}}Unary RPC for service at path "{{full_service_path}}" {{/input_stream}}{{#input_stream}}Stream RPC {{/input_stream}}{{/output_stream}}
 -spec {{method}}(router_pb:'{{input}}'()) ->
-    {{^output_stream}}{{^input_stream}}{ok, router_pb:'{{output}}'()}{{/input_stream}}{{#input_stream}}reference(){{/input_stream}}{{/output_stream}}{{#output_stream}}{{^input_stream}}reference(){{/input_stream}}{{#input_stream}}reference(){{/input_stream}}{{/output_stream}}|{error,eetcd:eetcd_error()}.
+    {{^output_stream}}{{^input_stream}}{ok, router_pb:'{{output}}'()}{{/input_stream}}{{#input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{/output_stream}}{{#output_stream}}{{^input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{#input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{/output_stream}}|{error,eetcd:eetcd_error()}.
 {{method}}(Request) ->
     {{^output_stream}}{{^input_stream}}eetcd_stream:unary(Request, '{{input}}', <<"{{full_service_path}}">>, '{{output}}'){{/input_stream}}{{#input_stream}}eetcd_stream:new(Request, <<"{{full_service_path}}">>){{/input_stream}}{{/output_stream}}{{#output_stream}}{{^input_stream}}eetcd_stream:new(Request, <<"{{full_service_path}}">>){{/input_stream}}{{/output_stream}}.
 
