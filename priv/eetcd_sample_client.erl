@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%% @doc Behaviour to implement for eectd {{unmodified_service_name}}
+%% @doc Behaviour to implement for eetcd {{unmodified_service_name}}
 %% @private
 %%  All detail documents please visit https://github.com/etcd-io/etcd/blob/master/Documentation/dev-guide/api_reference_v3.md
 %% @end
