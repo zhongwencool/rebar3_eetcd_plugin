@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%% @doc Behaviour to implement for eectd {{unmodified_service_name}}
+%% @doc Behaviour to implement for eetcd {{unmodified_service_name}}
 %% @private
 %%  All detail documents please visit https://github.com/etcd-io/etcd/blob/master/Documentation/dev-guide/api_reference_v3.md
 %% @end
@@ -14,7 +14,7 @@
 {{/methods}}
 
 {{#methods}}
-%% @doc {{^output_stream}}{{^input_stream}}Unary RPC for service at path "{{full_service_path}}" {{/input_stream}}{{#input_stream}}Stream RPC {{/input_stream}}{{/output_stream}}
+%% @doc {{^output_stream}}{{^input_stream}}Unary RPC for service at path "{{full_service_path}}"{{/input_stream}}{{#input_stream}}Stream RPC {{/input_stream}}{{/output_stream}}
 -spec {{method}}({{#input_stream}}atom()|reference(){{/input_stream}}{{^input_stream}}router_pb:'{{input}}'(){{/input_stream}}) ->
     {{^output_stream}}{{^input_stream}}{ok, router_pb:'{{output}}'()}{{/input_stream}}{{#input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{/output_stream}}{{#output_stream}}{{^input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{#input_stream}}{ok, GunPid :: pid(), Http2Ref:: reference()}{{/input_stream}}{{/output_stream}}|{error,eetcd:eetcd_error()}.
 {{method}}(Request) ->
